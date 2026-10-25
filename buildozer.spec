@@ -6,13 +6,13 @@ title = Flappy Snake
 # (str) Paketname (nur Kleinbuchstaben, keine Leerzeichen)
 package.name = flappysnake
 
-# (str) Paket-Domain (wichtig für Android-Eindeutigkeit)
+# (str) Paket-Domain
 package.domain = org.arcade
 
-# (str) Quellcode-Verzeichnis
+# (str) Quellcode-Verzeichnis (wichtig zur Behebung des Fehlers)
 source.dir = .
 
-# (str) Versionsnummer der App
+# (str) Versionsnummer der App (wichtig zur Behebung des Fehlers)
 version = 0.1
 
 # (str) Quellcode-Dateien
@@ -25,7 +25,7 @@ requirements = python3,pygame
 # (str) Einstiegspunkt der Anwendung
 entrypoint = main.py
 
-# (str) Ausrichtung (portrait oder landscape)
+# (str) Ausrichtung
 orientation = landscape
 
 # (str) Unterstützte Android-Architekturen
