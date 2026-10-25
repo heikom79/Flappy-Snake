@@ -32,39 +32,69 @@ jobs:
           pip install --upgrade pip
           pip install --upgrade cython==0.29.36 buildozer
 
-      - name: Android SDK & Command-Line-Tools vorab einrichten
+      - name: Android SDK & sdkmanager exakt bereitstellen
         run: |
-          SDK_DIR="/home/runner/.buildozer/android/platform/android-sdk"
-          mkdir -p "$SDK_DIR/cmdline-tools/latest"
-          mkdir -p "$SDK_DIR/licenses"
-          
-          # Android-Lizenzen hinterlegen
-          echo "8933bad161af4178b1185d1a37fbf41ea5269c55" > "$SDK_DIR/licenses/android-sdk-license"
-          echo "84831b9409646a918e30573bab4c9c91346d8abd" > "$SDK_DIR/licenses/android-sdk-preview-license"
+          python3 -c '
+          import os, urllib.request, zipfile, shutil, stat
 
-          # Command-Line-Tools herunterladen und sicher entpacken
-          echo "Lade Android Command-Line-Tools herunter..."
-          wget -q https://dl.google.com/android/repository/commandlinetools-linux-6514223_latest.zip -O /tmp/cmdtools.zip
-          mkdir -p /tmp/cmdtools_extracted
-          unzip -q /tmp/cmdtools.zip -d /tmp/cmdtools_extracted
-          
-          # Flexibles Kopieren in den latest-Ordner
-          cp -r /tmp/cmdtools_extracted/* "$SDK_DIR/cmdline-tools/latest/"
-          
-          # Falls sich ein doppelter Ordner gebildet hat, korrigieren
-          if [ -d "$SDK_DIR/cmdline-tools/latest/cmdline-tools" ]; then
-            mv "$SDK_DIR/cmdline-tools/latest/cmdline-tools"/* "$SDK_DIR/cmdline-tools/latest/"
-            rmdir "$SDK_DIR/cmdline-tools/latest/cmdline-tools"
-          fi
+          sdk_dir = "/home/runner/.buildozer/android/platform/android-sdk"
+          tools_bin = os.path.join(sdk_dir, "tools", "bin")
+          tools_lib = os.path.join(sdk_dir, "tools", "lib")
+          licenses_dir = os.path.join(sdk_dir, "licenses")
 
-          rm -rf /tmp/cmdtools.zip /tmp/cmdtools_extracted
+          os.makedirs(tools_bin, exist_ok=True)
+          os.makedirs(tools_lib, exist_ok=True)
+          os.makedirs(licenses_dir, exist_ok=True)
 
-          # Legacy Symlink für Buildozer erstellen
-          mkdir -p "$SDK_DIR/tools"
-          ln -sfn "$SDK_DIR/cmdline-tools/latest/bin" "$SDK_DIR/tools/bin"
-          ln -sfn "$SDK_DIR/cmdline-tools/latest/lib" "$SDK_DIR/tools/lib"
-          
-          echo "Android SDK Struktur erfolgreich vorbereitet."
+          # Android-Lizenzen hinterlegen, damit keine Abfrage erfolgt
+          with open(os.path.join(licenses_dir, "android-sdk-license"), "w") as f:
+              f.write("8933bad161af4178b1185d1a37fbf41ea5269c55")
+          with open(os.path.join(licenses_dir, "android-sdk-preview-license"), "w") as f:
+              f.write("84831b9409646a918e30573bab4c9c91346d8abd")
+
+          zip_path = "/tmp/cmdtools.zip"
+          extract_path = "/tmp/cmdtools_ext"
+
+          print("Lade Android Command-Line-Tools herunter...")
+          url = "https://dl.google.com/android/repository/commandlinetools-linux-6514223_latest.zip"
+          urllib.request.urlretrieve(url, zip_path)
+
+          print("Entpacke Tools...")
+          with zipfile.ZipFile(zip_path, "r") as zip_ref:
+              zip_ref.extractall(extract_path)
+
+          # Quelldateien aus dem Archiv ermitteln
+          src_bin = os.path.join(extract_path, "cmdline-tools", "bin")
+          src_lib = os.path.join(extract_path, "cmdline-tools", "lib")
+
+          # Bin-Dateien kopieren und ausführbar machen
+          if os.path.exists(src_bin):
+              for item in os.listdir(src_bin):
+                  s = os.path.join(src_bin, item)
+                  d = os.path.join(tools_bin, item)
+                  shutil.copy2(s, d)
+                  # Ausführungsrechte (chmod +x) für Linux setzen
+                  os.chmod(d, stat.S_IRWXU | stat.S_IRGRP | stat.S_IXGRP | stat.S_IROTH | stat.S_IXOTH)
+
+          # Lib-Dateien kopieren
+          if os.path.exists(src_lib):
+              for item in os.listdir(src_lib):
+                  s = os.path.join(src_lib, item)
+                  d = os.path.join(tools_lib, item)
+                  if os.path.isdir(s):
+                      if os.path.exists(d):
+                          shutil.rmtree(d)
+                      shutil.copytree(s, d)
+                  else:
+                      shutil.copy2(s, d)
+
+          # Temporäre Dateien aufräumen
+          shutil.rmtree(extract_path, ignore_errors=True)
+          if os.path.exists(zip_path):
+              os.remove(zip_path)
+
+          print("sdkmanager erfolgreich unter tools/bin platziert und aktiviert.")
+          '
 
       - name: Android APK mit Buildozer bauen
         run: |
