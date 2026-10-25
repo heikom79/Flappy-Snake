@@ -32,11 +32,28 @@ jobs:
           pip install --upgrade pip
           pip install --upgrade cython==0.29.36 buildozer
 
-      - name: Android SDK Lizenzen hinterlegen & APK bauen
+      - name: Android SDK Lizenzen hinterlegen & Erstversuch
+        continue-on-error: true
         run: |
           mkdir -p /home/runner/.buildozer/android/platform/android-sdk/licenses
           echo "8933bad161af4178b1185d1a37fbf41ea5269c55" > /home/runner/.buildozer/android/platform/android-sdk/licenses/android-sdk-license
           echo "84831b9409646a918e30573bab4c9c91346d8abd" > /home/runner/.buildozer/android/platform/android-sdk/licenses/android-sdk-preview-license
+          buildozer -v android debug
+
+      - name: SDK-Pfad für Buildozer anpassen (Symlink setzen)
+        run: |
+          SDK_DIR="/home/runner/.buildozer/android/platform/android-sdk"
+          mkdir -p "$SDK_DIR/tools"
+          if [ -d "$SDK_DIR/cmdline-tools/latest" ]; then
+            ln -sfn "$SDK_DIR/cmdline-tools/latest/bin" "$SDK_DIR/tools/bin"
+            ln -sfn "$SDK_DIR/cmdline-tools/latest/lib" "$SDK_DIR/tools/lib"
+          elif [ -d "$SDK_DIR/cmdline-tools" ]; then
+            ln -sfn "$SDK_DIR/cmdline-tools/bin" "$SDK_DIR/tools/bin"
+            ln -sfn "$SDK_DIR/cmdline-tools/lib" "$SDK_DIR/tools/lib"
+          fi
+
+      - name: Android APK mit Buildozer fertigbauen
+        run: |
           buildozer -v android debug
 
       - name: APK-Datei als Artefakt hochladen
