@@ -13,15 +13,10 @@ jobs:
       - name: Repository auschecken
         uses: actions/checkout@v4
 
-      - name: Python einrichten
-        uses: actions/setup-python@v5
-        with:
-          python-version: '3.10'
-
       - name: Android APK mit Buildozer bauen
-        uses: ArtemSBulgakov/buildozer-action@v1
+        uses: docker://kivy/buildozer:master
         with:
-          command: buildozer -v android debug
+          args: -v android debug
 
       - name: APK-Datei als Artefakt hochladen
         uses: actions/upload-artifact@v4
