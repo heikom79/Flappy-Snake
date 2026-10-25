@@ -40,13 +40,34 @@ jobs:
           echo "84831b9409646a918e30573bab4c9c91346d8abd" > /home/runner/.buildozer/android/platform/android-sdk/licenses/android-sdk-preview-license
           buildozer -v android debug
 
-      - name: SDK-Pfad für Buildozer reparieren
+      - name: SDK-Pfad für Buildozer via Python reparieren
         run: |
-          SDK_DIR="/home/runner/.buildozer/android/platform/android-sdk"
-          mkdir -p "$SDK_DIR/tools"
-          # Wir erstellen einen Symlink, damit Buildozer tools/bin/sdkmanager findet
-          if [ -d "$SDK_DIR/cmdline-tools/latest" ]; then
-            ln -sfn "$SDK_DIR/cmdline-tools/latest/bin" "$SDK_DIR/tools/bin"
-          elif [ -d "$SDK_DIR/cmdline-tools" ]; then
-            ln -sfn "$SDK_DIR/cmdline-
-            
+          python3 -c '
+          import os, glob
+          sdk = "/home/runner/.buildozer/android/platform/android-sdk"
+          tools_dir = os.path.join(sdk, "tools")
+          os.makedirs(tools_dir, exist_ok=True)
+          
+          # Finde den korrekten bin-Ordner der Command-Line-Tools
+          cmd_bins = glob.glob(os.path.join(sdk, "cmdline-tools", "*", "bin")) + glob.glob(os.path.join(sdk, "cmdline-tools", "bin"))
+          if cmd_bins:
+              src = cmd_bins[0]
+              dst = os.path.join(tools_dir, "bin")
+              if os.path.lexists(dst):
+                  os.remove(dst)
+              os.symlink(src, dst)
+              print("Symlink erfolgreich erstellt:", src, "->", dst)
+          else:
+              print("Warnung: Keine cmdline-tools gefunden, fahre fort...")
+          '
+
+      - name: Android APK mit Buildozer fertigbauen
+        run: |
+          buildozer -v android debug
+
+      - name: APK-Datei als Artefakt hochladen
+        uses: actions/upload-artifact@v4
+        with:
+          name: flappy-snake-apk
+          path: bin/*.apk
+          
