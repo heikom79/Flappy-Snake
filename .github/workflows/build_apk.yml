@@ -42,18 +42,24 @@ jobs:
           echo "8933bad161af4178b1185d1a37fbf41ea5269c55" > "$SDK_DIR/licenses/android-sdk-license"
           echo "84831b9409646a918e30573bab4c9c91346d8abd" > "$SDK_DIR/licenses/android-sdk-preview-license"
 
-          # Offizielle Command-Line-Tools herunterladen
+          # Command-Line-Tools herunterladen und sicher entpacken
           echo "Lade Android Command-Line-Tools herunter..."
           wget -q https://dl.google.com/android/repository/commandlinetools-linux-6514223_latest.zip -O /tmp/cmdtools.zip
           mkdir -p /tmp/cmdtools_extracted
           unzip -q /tmp/cmdtools.zip -d /tmp/cmdtools_extracted
           
-          # In den 'latest'-Ordner verschieben
-          rm -rf "$SDK_DIR/cmdline-tools/latest/*"
-          cp -r /tmp/cmdtools_extracted/cmdline-tools/* "$SDK_DIR/cmdline-tools/latest/"
+          # Flexibles Kopieren in den latest-Ordner
+          cp -r /tmp/cmdtools_extracted/* "$SDK_DIR/cmdline-tools/latest/"
+          
+          # Falls sich ein doppelter Ordner gebildet hat, korrigieren
+          if [ -d "$SDK_DIR/cmdline-tools/latest/cmdline-tools" ]; then
+            mv "$SDK_DIR/cmdline-tools/latest/cmdline-tools"/* "$SDK_DIR/cmdline-tools/latest/"
+            rmdir "$SDK_DIR/cmdline-tools/latest/cmdline-tools"
+          fi
+
           rm -rf /tmp/cmdtools.zip /tmp/cmdtools_extracted
 
-          # Symlink für den von Buildozer gesuchten legacy-Pfad (tools/bin) erstellen
+          # Legacy Symlink für Buildozer erstellen
           mkdir -p "$SDK_DIR/tools"
           ln -sfn "$SDK_DIR/cmdline-tools/latest/bin" "$SDK_DIR/tools/bin"
           ln -sfn "$SDK_DIR/cmdline-tools/latest/lib" "$SDK_DIR/tools/lib"
