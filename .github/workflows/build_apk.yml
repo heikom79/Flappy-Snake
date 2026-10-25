@@ -40,5 +40,11 @@ jobs:
           echo "84831b9409646a918e30573bab4c9c91346d8abd" > /home/runner/.buildozer/android/platform/android-sdk/licenses/android-sdk-preview-license
           buildozer -v android debug
 
-      - name: SDK-Pfad für Build
-      
+      - name: SDK-Pfad für Buildozer reparieren
+        run: |
+          SDK_DIR="/home/runner/.buildozer/android/platform/android-sdk"
+          mkdir -p "$SDK_DIR/tools"
+          # Wir erstellen einen Symlink, damit Buildozer tools/bin/sdkmanager findet
+          if [ -d "$SDK_DIR/cmdline-tools/latest" ]; then
+            ln -sfn "$SDK_DIR/cmdline-tools/latest/bin" "$
+            
