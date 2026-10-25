@@ -13,96 +13,14 @@ jobs:
       - name: Repository auschecken
         uses: actions/checkout@v4
 
-      - name: Python einrichten
-        uses: actions/setup-python@v5
+      - name: Buildozer APK Build
+        uses: kivy/buildozer-action@v1
         with:
-          python-version: '3.10'
+          command: buildozer -v android debug
 
-      - name: System-Abhängigkeiten installieren
-        run: |
-          sudo dpkg --add-architecture i386
-          sudo apt-get update
-          sudo apt-get install -y \
-            build-essential ccache git libncurses5:i386 libstdc++6:i386 \
-            zlib1g-dev libssl-dev libffi-dev unzip openjdk-17-jdk python3-pip \
-            autoconf libtool pkg-config wget
-
-      - name: Buildozer und Cython installieren
-        run: |
-          pip install --upgrade pip
-          pip install --upgrade cython==0.29.36 buildozer
-
-      - name: Android SDK & sdkmanager universell bereitstellen
-        run: |
-          python3 -c '
-          import os, urllib.request, zipfile, shutil, stat
-
-          sdk_dir = "/home/runner/.buildozer/android/platform/android-sdk"
-          tools_bin = os.path.join(sdk_dir, "tools", "bin")
-          cmdline_bin = os.path.join(sdk_dir, "cmdline-tools", "latest", "bin")
-          licenses_dir = os.path.join(sdk_dir, "licenses")
-
-          os.makedirs(tools_bin, exist_ok=True)
-          os.makedirs(cmdline_bin, exist_ok=True)
-          os.makedirs(licenses_dir, exist_ok=True)
-
-          # Lizenzen hinterlegen, damit keine Abfrage erfolgt
-          with open(os.path.join(licenses_dir, "android-sdk-license"), "w") as f:
-              f.write("8933bad161af4178b1185d1a37fbf41ea5269c55")
-          with open(os.path.join(licenses_dir, "android-sdk-preview-license"), "w") as f:
-              f.write("84831b9409646a918e30573bab4c9c91346d8abd")
-
-          zip_path = "/tmp/cmdtools.zip"
-          extract_path = "/tmp/cmdtools_ext"
-
-          print("Lade Android Command-Line-Tools herunter...")
-          url = "https://dl.google.com/android/repository/commandlinetools-linux-6514223_latest.zip"
-          urllib.request.urlretrieve(url, zip_path)
-
-          print("Entpacke Tools...")
-          with zipfile.ZipFile(zip_path, "r") as zip_ref:
-              zip_ref.extractall(extract_path)
-
-          src_bin = os.path.join(extract_path, "cmdline-tools", "bin")
-          src_lib = os.path.join(extract_path, "cmdline-tools", "lib")
-
-          # Kopiere Binaries physisch in BEIDE erwarteten Pfade und mache sie ausführbar
-          for dest in [tools_bin, cmdline_bin]:
-              os.makedirs(dest, exist_ok=True)
-              if os.path.exists(src_bin):
-                  for item in os.listdir(src_bin):
-                      s = os.path.join(src_bin, item)
-                      d = os.path.join(dest, item)
-                      shutil.copy2(s, d)
-                      os.chmod(d, stat.S_IRWXU | stat.S_IRGRP | stat.S_IXGRP | stat.S_IROTH | stat.S_IXOTH)
-
-          # Kopiere Libraries ebenfalls in beide Basispfade
-          for target_base in [os.path.join(sdk_dir, "tools"), os.path.join(sdk_dir, "cmdline-tools", "latest")]:
-              dest_lib = os.path.join(target_base, "lib")
-              os.makedirs(dest_lib, exist_ok=True)
-              if os.path.exists(src_lib):
-                  for item in os.listdir(src_lib):
-                      s = os.path.join(src_lib, item)
-                      d = os.path.join(dest_lib, item)
-                      if os.path.isdir(s):
-                          shutil.copytree(s, d, dirs_exist_ok=True)
-                      else:
-                          shutil.copy2(s, d)
-
-          # Aufräumen
-          shutil.rmtree(extract_path, ignore_errors=True)
-          if os.path.exists(zip_path):
-              os.remove(zip_path)
-
-          print("sdkmanager erfolgreich an allen Legacy- und Modern-Pfaden platziert.")
-          '
-
-      - name: Android APK mit Buildozer bauen
-        run: |
-          buildozer -v android debug
-
-      - name: APK-Datei als Artefakt hochladen
+      - name: APK als Artefakt hochladen
         uses: actions/upload-artifact@v4
         with:
           name: flappy-snake-apk
           path: bin/*.apk
+          
