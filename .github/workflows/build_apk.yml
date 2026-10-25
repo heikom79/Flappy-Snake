@@ -32,20 +32,21 @@ jobs:
           pip install --upgrade pip
           pip install --upgrade cython==0.29.36 buildozer
 
-      - name: Android SDK & Legacy-Symlink vorab einrichten
+      - name: Android SDK & sdkmanager universell bereitstellen
         run: |
           python3 -c '
-          import os, urllib.request, zipfile, shutil
+          import os, urllib.request, zipfile, shutil, stat
 
           sdk_dir = "/home/runner/.buildozer/android/platform/android-sdk"
-          latest_dir = os.path.join(sdk_dir, "cmdline-tools", "latest")
-          tools_dir = os.path.join(sdk_dir, "tools")
+          tools_bin = os.path.join(sdk_dir, "tools", "bin")
+          cmdline_bin = os.path.join(sdk_dir, "cmdline-tools", "latest", "bin")
           licenses_dir = os.path.join(sdk_dir, "licenses")
 
-          os.makedirs(latest_dir, exist_ok=True)
+          os.makedirs(tools_bin, exist_ok=True)
+          os.makedirs(cmdline_bin, exist_ok=True)
           os.makedirs(licenses_dir, exist_ok=True)
 
-          # Android-Lizenzen hinterlegen, damit keine Abfrage erfolgt
+          # Lizenzen hinterlegen, damit keine Abfrage erfolgt
           with open(os.path.join(licenses_dir, "android-sdk-license"), "w") as f:
               f.write("8933bad161af4178b1185d1a37fbf41ea5269c55")
           with open(os.path.join(licenses_dir, "android-sdk-preview-license"), "w") as f:
@@ -62,31 +63,38 @@ jobs:
           with zipfile.ZipFile(zip_path, "r") as zip_ref:
               zip_ref.extractall(extract_path)
 
-          # Inhalt korrekt in cmdline-tools/latest/ kopieren
-          src_cmdline = os.path.join(extract_path, "cmdline-tools")
-          if os.path.exists(src_cmdline):
-              for item in os.listdir(src_cmdline):
-                  s = os.path.join(src_cmdline, item)
-                  d = os.path.join(latest_dir, item)
-                  if os.path.isdir(s):
-                      if os.path.exists(d):
-                          shutil.rmtree(d)
-                      shutil.copytree(s, d)
-                  else:
-                      shutil.copy2(s, d)
+          src_bin = os.path.join(extract_path, "cmdline-tools", "bin")
+          src_lib = os.path.join(extract_path, "cmdline-tools", "lib")
 
-          # Legacy-Symlink erstellen: tools -> cmdline-tools/latest
-          # Dadurch findet Buildozer tools/bin/sdkmanager garantiert
-          if os.path.lexists(tools_dir):
-              os.remove(tools_dir)
-          os.symlink(os.path.join(sdk_dir, "cmdline-tools", "latest"), tools_dir)
+          # Kopiere Binaries physisch in BEIDE erwarteten Pfade und mache sie ausführbar
+          for dest in [tools_bin, cmdline_bin]:
+              os.makedirs(dest, exist_ok=True)
+              if os.path.exists(src_bin):
+                  for item in os.listdir(src_bin):
+                      s = os.path.join(src_bin, item)
+                      d = os.path.join(dest, item)
+                      shutil.copy2(s, d)
+                      os.chmod(d, stat.S_IRWXU | stat.S_IRGRP | stat.S_IXGRP | stat.S_IROTH | stat.S_IXOTH)
+
+          # Kopiere Libraries ebenfalls in beide Basispfade
+          for target_base in [os.path.join(sdk_dir, "tools"), os.path.join(sdk_dir, "cmdline-tools", "latest")]:
+              dest_lib = os.path.join(target_base, "lib")
+              os.makedirs(dest_lib, exist_ok=True)
+              if os.path.exists(src_lib):
+                  for item in os.listdir(src_lib):
+                      s = os.path.join(src_lib, item)
+                      d = os.path.join(dest_lib, item)
+                      if os.path.isdir(s):
+                          shutil.copytree(s, d, dirs_exist_ok=True)
+                      else:
+                          shutil.copy2(s, d)
 
           # Aufräumen
           shutil.rmtree(extract_path, ignore_errors=True)
           if os.path.exists(zip_path):
               os.remove(zip_path)
 
-          print("Android SDK und Legacy-Verknüpfung erfolgreich eingerichtet.")
+          print("sdkmanager erfolgreich an allen Legacy- und Modern-Pfaden platziert.")
           '
 
       - name: Android APK mit Buildozer bauen
@@ -98,4 +106,3 @@ jobs:
         with:
           name: flappy-snake-apk
           path: bin/*.apk
-          
