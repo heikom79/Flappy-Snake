@@ -19,7 +19,7 @@ jobs:
           python-version: '3.10'
 
       - name: Android APK mit Buildozer bauen
-        uses: kivy/buildozer-action@v1
+        uses: ArtemSBulgakov/buildozer-action@v1
         with:
           command: buildozer -v android debug
 
@@ -28,3 +28,4 @@ jobs:
         with:
           name: flappy-snake-apk
           path: bin/*.apk
+          
