@@ -9,10 +9,10 @@ package.name = flappysnake
 # (str) Paket-Domain
 package.domain = org.arcade
 
-# (str) Quellcode-Verzeichnis (wichtig zur Behebung des Fehlers)
+# (str) Quellcode-Verzeichnis
 source.dir = .
 
-# (str) Versionsnummer der App (wichtig zur Behebung des Fehlers)
+# (str) Versionsnummer der App
 version = 0.1
 
 # (str) Quellcode-Dateien
