@@ -68,4 +68,3 @@ jobs:
         with:
           name: flappy-snake-apk
           path: bin/*.apk
-          s
