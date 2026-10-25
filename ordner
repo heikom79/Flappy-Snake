@@ -1,0 +1,9 @@
+flappy_snake/
+├── src/
+│   ├── __init__.py
+│   ├── settings.py   # Farben, Bildschirmgröße, Gravitation
+│   ├── snake.py      # Fliegender Kopf + mitschleifender Körper
+│   ├── pipe.py       # Hindernis-Rohre mit Lücken
+│   └── game.py       # Spielschleife & Kollisionsabfrage
+├── main.py           # Startpunkt
+└── requirements.txt  # pygame>=2.5.0
