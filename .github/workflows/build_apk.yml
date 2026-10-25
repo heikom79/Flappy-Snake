@@ -32,36 +32,35 @@ jobs:
           pip install --upgrade pip
           pip install --upgrade cython==0.29.36 buildozer
 
-      - name: Android SDK Lizenzen hinterlegen & Erstversuch
-        continue-on-error: true
+      - name: Android SDK & Command-Line-Tools vorab einrichten
         run: |
-          mkdir -p /home/runner/.buildozer/android/platform/android-sdk/licenses
-          echo "8933bad161af4178b1185d1a37fbf41ea5269c55" > /home/runner/.buildozer/android/platform/android-sdk/licenses/android-sdk-license
-          echo "84831b9409646a918e30573bab4c9c91346d8abd" > /home/runner/.buildozer/android/platform/android-sdk/licenses/android-sdk-preview-license
-          buildozer -v android debug
-
-      - name: SDK-Pfad für Buildozer via Python reparieren
-        run: |
-          python3 -c '
-          import os, glob
-          sdk = "/home/runner/.buildozer/android/platform/android-sdk"
-          tools_dir = os.path.join(sdk, "tools")
-          os.makedirs(tools_dir, exist_ok=True)
+          SDK_DIR="/home/runner/.buildozer/android/platform/android-sdk"
+          mkdir -p "$SDK_DIR/cmdline-tools/latest"
+          mkdir -p "$SDK_DIR/licenses"
           
-          # Finde den korrekten bin-Ordner der Command-Line-Tools
-          cmd_bins = glob.glob(os.path.join(sdk, "cmdline-tools", "*", "bin")) + glob.glob(os.path.join(sdk, "cmdline-tools", "bin"))
-          if cmd_bins:
-              src = cmd_bins[0]
-              dst = os.path.join(tools_dir, "bin")
-              if os.path.lexists(dst):
-                  os.remove(dst)
-              os.symlink(src, dst)
-              print("Symlink erfolgreich erstellt:", src, "->", dst)
-          else:
-              print("Warnung: Keine cmdline-tools gefunden, fahre fort...")
-          '
+          # Android-Lizenzen hinterlegen
+          echo "8933bad161af4178b1185d1a37fbf41ea5269c55" > "$SDK_DIR/licenses/android-sdk-license"
+          echo "84831b9409646a918e30573bab4c9c91346d8abd" > "$SDK_DIR/licenses/android-sdk-preview-license"
 
-      - name: Android APK mit Buildozer fertigbauen
+          # Offizielle Command-Line-Tools herunterladen
+          echo "Lade Android Command-Line-Tools herunter..."
+          wget -q https://dl.google.com/android/repository/commandlinetools-linux-6514223_latest.zip -O /tmp/cmdtools.zip
+          mkdir -p /tmp/cmdtools_extracted
+          unzip -q /tmp/cmdtools.zip -d /tmp/cmdtools_extracted
+          
+          # In den 'latest'-Ordner verschieben
+          rm -rf "$SDK_DIR/cmdline-tools/latest/*"
+          cp -r /tmp/cmdtools_extracted/cmdline-tools/* "$SDK_DIR/cmdline-tools/latest/"
+          rm -rf /tmp/cmdtools.zip /tmp/cmdtools_extracted
+
+          # Symlink für den von Buildozer gesuchten legacy-Pfad (tools/bin) erstellen
+          mkdir -p "$SDK_DIR/tools"
+          ln -sfn "$SDK_DIR/cmdline-tools/latest/bin" "$SDK_DIR/tools/bin"
+          ln -sfn "$SDK_DIR/cmdline-tools/latest/lib" "$SDK_DIR/tools/lib"
+          
+          echo "Android SDK Struktur erfolgreich vorbereitet."
+
+      - name: Android APK mit Buildozer bauen
         run: |
           buildozer -v android debug
 
