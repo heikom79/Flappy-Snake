@@ -24,7 +24,7 @@ jobs:
           sudo apt-get install -y \
             git zip unzip openjdk-17-jdk python3-pip autoconf libtool pkg-config \
             zlib1g-dev libncurses5-dev libncursesw5-dev libffi-dev libssl-dev \
-            build-impact ccache
+            build-essential ccache
 
       - name: Buildozer und Cython installieren
         run: |
