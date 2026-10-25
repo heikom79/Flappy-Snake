@@ -32,39 +32,13 @@ jobs:
           pip install --upgrade pip
           pip install --upgrade cython==0.29.36 buildozer
 
-      - name: Android SDK & Lizenzen manuell vorbereiten
+      - name: Android SDK Lizenzen hinterlegen & Erstversuch
+        continue-on-error: true
         run: |
-          SDK_DIR="/home/runner/.buildozer/android/platform/android-sdk"
-          TOOLS_DIR="$SDK_DIR/tools"
-          mkdir -p "$TOOLS_DIR/bin"
-          mkdir -p "$SDK_DIR/licenses"
-          
-          # Android-Lizenzen hinterlegen
-          echo "8933bad161af4178b1185d1a37fbf41ea5269c55" > "$SDK_DIR/licenses/android-sdk-license"
-          echo "84831b9409646a918e30573bab4c9c91346d8abd" > "$SDK_DIR/licenses/android-sdk-preview-license"
-
-          # Command Line Tools herunterladen und flexibel entpacken
-          echo "Lade Android Command-Line-Tools herunter..."
-          wget -q https://dl.google.com/android/repository/commandlinetools-linux-6514223_latest.zip -O /tmp/cmdtools.zip
-          mkdir -p /tmp/cmdtools_extracted
-          unzip -q /tmp/cmdtools.zip -d /tmp/cmdtools_extracted
-          
-          # Flexibles Kopieren je nach Ordnerstruktur im Archiv
-          if [ -d "/tmp/cmdtools_extracted/cmdline-tools" ]; then
-            cp -r /tmp/cmdtools_extracted/cmdline-tools/* "$TOOLS_DIR/"
-          else
-            cp -r /tmp/cmdtools_extracted/* "$TOOLS_DIR/"
-          fi
-          
-          rm -rf /tmp/cmdtools.zip /tmp/cmdtools_extracted
-          echo "Android SDK Struktur erfolgreich vorbereitet."
-
-      - name: Android APK mit Buildozer bauen
-        run: |
+          mkdir -p /home/runner/.buildozer/android/platform/android-sdk/licenses
+          echo "8933bad161af4178b1185d1a37fbf41ea5269c55" > /home/runner/.buildozer/android/platform/android-sdk/licenses/android-sdk-license
+          echo "84831b9409646a918e30573bab4c9c91346d8abd" > /home/runner/.buildozer/android/platform/android-sdk/licenses/android-sdk-preview-license
           buildozer -v android debug
 
-      - name: APK-Datei als Artefakt hochladen
-        uses: actions/upload-artifact@v4
-        with:
-          name: flappy-snake-apk
-          path: bin/*.apk
+      - name: SDK-Pfad für Build
+      
