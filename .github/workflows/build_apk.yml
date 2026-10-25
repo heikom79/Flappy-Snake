@@ -43,15 +43,20 @@ jobs:
           echo "8933bad161af4178b1185d1a37fbf41ea5269c55" > "$SDK_DIR/licenses/android-sdk-license"
           echo "84831b9409646a918e30573bab4c9c91346d8abd" > "$SDK_DIR/licenses/android-sdk-preview-license"
 
-          # Command Line Tools herunterladen und passend platzieren
+          # Command Line Tools herunterladen und flexibel entpacken
           echo "Lade Android Command-Line-Tools herunter..."
           wget -q https://dl.google.com/android/repository/commandlinetools-linux-6514223_latest.zip -O /tmp/cmdtools.zip
+          mkdir -p /tmp/cmdtools_extracted
           unzip -q /tmp/cmdtools.zip -d /tmp/cmdtools_extracted
           
-          # Inhalt direkt in tools/ kopieren, damit tools/bin/sdkmanager exakt existiert
-          cp -r /tmp/cmdtools_extracted/cmdline-tools/* "$TOOLS_DIR/"
-          rm -rf /tmp/cmdtools.zip /tmp/cmdtools_extracted
+          # Flexibles Kopieren je nach Ordnerstruktur im Archiv
+          if [ -d "/tmp/cmdtools_extracted/cmdline-tools" ]; then
+            cp -r /tmp/cmdtools_extracted/cmdline-tools/* "$TOOLS_DIR/"
+          else
+            cp -r /tmp/cmdtools_extracted/* "$TOOLS_DIR/"
+          fi
           
+          rm -rf /tmp/cmdtools.zip /tmp/cmdtools_extracted
           echo "Android SDK Struktur erfolgreich vorbereitet."
 
       - name: Android APK mit Buildozer bauen
@@ -63,4 +68,4 @@ jobs:
         with:
           name: flappy-snake-apk
           path: bin/*.apk
-          
+          s
